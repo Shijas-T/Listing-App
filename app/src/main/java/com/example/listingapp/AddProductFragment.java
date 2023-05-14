@@ -9,6 +9,7 @@ import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.VolleyLog;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class AddProductFragment extends Fragment {
 
@@ -102,10 +113,10 @@ public class AddProductFragment extends Fragment {
     private void addProduct() {
 
         // Take the value of two edit texts in Strings
-        String productName, productPrice, productProductTaxRate, productType;
+        String productName, productPrice, productTaxRate, productType;
         productName = editTextProductName.getText().toString();
         productPrice = editTextProductPrice.getText().toString();
-        productProductTaxRate = editTextProductTaxRate.getText().toString();
+        productTaxRate = editTextProductTaxRate.getText().toString();
         productType = autoCompleteTextViewType.getText().toString();
 
         // validations for inputs
@@ -123,7 +134,7 @@ public class AddProductFragment extends Fragment {
                     .show();
             return;
         }
-        if (TextUtils.isEmpty(productProductTaxRate)) {
+        if (TextUtils.isEmpty(productTaxRate)) {
             Toast.makeText(getContext(),
                             "Please enter tax rate!!",
                             Toast.LENGTH_LONG)
@@ -138,6 +149,44 @@ public class AddProductFragment extends Fragment {
             return;
         }
 
+        if(productName != "" && productPrice != "" && productTaxRate != "" && productType != ""){
 
+            StringRequest postRequest = new StringRequest(Request.Method.POST, "https://app.getswipe.in/api/public/add",
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+
+                            editTextProductName.setText("");
+                            editTextProductPrice.setText("");
+                            editTextProductTaxRate.setText("");
+                            autoCompleteTextViewType.setText("");
+                            imageViewProduct.setImageResource(R.mipmap.select_image);
+
+                            Log.e("inside add product", "postRequest Response :"+response.toString());
+                            Toast.makeText(getContext(), "Product added Successfully!", Toast.LENGTH_SHORT).show();
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            Toast.makeText(getContext(), "something went wrong", Toast.LENGTH_SHORT).show();
+                            VolleyLog.d("inside add product", "Error: " + error.getMessage());
+                        }
+                    }){
+                @Override
+                protected Map<String, String> getParams() {
+
+                    Map<String, String> params = new HashMap<>();
+                    // the POST parameters:
+                    params.put("product_name", productName);
+                    params.put("product_type", productType);
+                    params.put("price", productPrice);
+                    params.put("tax", productTaxRate);
+                    params.put("files[]", selectedImageUri == null ? "" : selectedImageUri.toString());
+                    return params;
+                }
+            };
+            Volley.newRequestQueue(getContext()).add(postRequest);
+        }
     }
 }
